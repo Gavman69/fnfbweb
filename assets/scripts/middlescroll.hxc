@@ -1,0 +1,157 @@
+import flixel.FlxG;
+import flixel.FlxBasic;
+import flixel.util.FlxTimer;
+import funkin.modding.module.Module;
+import funkin.play.PlayState;
+import funkin.util.Constants;
+import funkin.Paths;
+import flixel.text.FlxTextBorderStyle;
+import flixel.text.FlxText;
+import flixel.FlxSprite;
+import flixel.tweens.FlxEase;
+import flixel.tweens.FlxTween;
+import funkin.play.notes.Strumline;
+import flixel.group.FlxTypedSpriteGroup;
+import funkin.play.notes.NoteHoldCover;
+
+class CenteredField extends Module
+{
+    var hasDoneStuff:Bool = false;
+    var defStrumlineX:Array<Float> = [82, 194, 971, 1083];
+
+    function new(){
+        super("PsychEngineMiddlescroll");
+        hasDoneStuff = false;
+		Constants.STRUMLINE_X_OFFSET = 28;
+    }
+
+	function onCreate(event:ScriptEvent):Void {
+		super.onCreate(event);
+		hasDoneStuff = false;
+	}
+	
+	function isInPlaystate() {
+		var state = PlayState.instance;
+		var inPlay = Std.isOfType(FlxG.state, PlayState);
+		if (state != null && inPlay)
+			return true;
+		hasDoneStuff = false;
+		return false;
+	}
+
+	override function onStateChangeBegin(ev:ScriptEvent) {
+		super.onStateChangeBegin(ev);
+		hasDoneStuff = false;
+	}
+
+	override function onStateChangeEnd(ev:ScriptEvent) {
+		super.onStateChangeEnd(ev);
+		hasDoneStuff = false;
+	}
+
+    function onSongStart(event:CountdownScriptEvent):Void {
+        super.onSongStart(event);
+        hasDoneStuff = true;
+    }
+
+    function notesMiddleScrollStuff()
+    {
+        if (PlayState.instance.opponentStrumline == null) {
+            return;
+        }
+        for (note in PlayState.instance.opponentStrumline.notes) {
+            note.x = defStrumlineX[note.noteData.getDirection()];
+        }
+        for (note in PlayState.instance.opponentStrumline.holdNotes) {
+            if (note.noteData != null) {
+                note.x = defStrumlineX[note.noteData.getDirection()]+note.width;
+            }
+        }
+    }
+
+    function psychEngineMiddleScroll(offset:Float = 0)
+    {
+        var opponentStrumline:FlxSprite = PlayState.instance.opponentStrumline;
+        //opponentStrumline.x = -1000;
+		for (i in 0...opponentStrumline.strumlineNotes.members.length) {
+			opponentStrumline.strumlineNotes.members[i].x = defStrumlineX[i]-Constants.STRUMLINE_X_OFFSET+offset;
+		}
+        var playerStrumline:FlxSprite = PlayState.instance.playerStrumline;
+		if (playerStrumline != null)
+		{
+			playerStrumline.x = FlxG.width / 2 - playerStrumline.width / 2;
+		}
+    }
+
+    function setAllNoteTransparancy(transparancy:Float)
+    {
+        var opponentStrumline:FlxSprite = PlayState.instance.opponentStrumline;
+        if (opponentStrumline != null)
+		{
+			for (note in opponentStrumline.notes)
+			{
+                if (note.alpha >= transparancy) {
+				    note.alpha = transparancy;
+                }
+			}
+            for (hold in opponentStrumline.holdNotes) {
+                if (hold.alpha >= transparancy) {
+				    hold.alpha = transparancy;
+                }
+            }
+			for (strum in opponentStrumline.strumlineNotes.members) {
+				if (strum.alpha >= transparancy) {
+					strum.alpha = transparancy;
+				}
+			}
+			if (opponentStrumline.noteHoldCovers.members.length > 0) {
+				for (holdCover in opponentStrumline.noteHoldCovers.members) {
+					if (holdCover.alpha >= transparancy) {
+						holdCover.alpha = transparancy;
+					}
+				}
+			}
+		}
+    }
+
+    //310-278 = 32
+
+	function onUpdate(event:ScriptEvent):Void
+	{
+		if (Constants.STRUMLINE_X_OFFSET != 28)
+			Constants.STRUMLINE_X_OFFSET = 28;
+        if (!isInPlaystate()) {
+			hasDoneStuff = false;
+            return;
+        }
+		var opponentStrumline = PlayState.instance.opponentStrumline;
+		if (opponentStrumline.noteHoldCovers != null) {
+			opponentStrumline.x = -1000;
+			for (i in 0...opponentStrumline.noteHoldCovers.members.length) {
+				var offset:Float = -106.5;
+				if (opponentStrumline.noteHoldCovers.members[i] != null)
+				{
+					switch (opponentStrumline.noteHoldCovers.members[i].x)
+					{
+						case -774:
+							opponentStrumline.noteHoldCovers.members[i].x = defStrumlineX[3]+offset;
+						case -998:
+							opponentStrumline.noteHoldCovers.members[i].x = defStrumlineX[1]+offset;
+						case -1110:
+							opponentStrumline.noteHoldCovers.members[i].x = defStrumlineX[0]+offset;
+						case -886:
+							opponentStrumline.noteHoldCovers.members[i].x = defStrumlineX[2]+offset;
+					}
+				}
+			}
+			if (!hasDoneStuff) {
+				if (opponentStrumline.noteStyle.id == 'pixel')
+					psychEngineMiddleScroll(30);
+				else
+					psychEngineMiddleScroll(0);
+			}
+		}
+        setAllNoteTransparancy(0.35);
+        notesMiddleScrollStuff();
+	}
+}
